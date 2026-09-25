@@ -1,0 +1,1774 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#191118" />
+    <title>有一封信，等你很久了</title>
+    <style>
+      /* ==================== 基础与变量 ==================== */
+      :root {
+        --night: #191118;
+        --night2: #241722;
+        --cream: #fbf5ec;
+        --ink: #4c3b30;
+        --ink-soft: #8a7160;
+        --rose: #c2706b;
+        --rose-deep: #a85256;
+        --gold: #c79a4b;
+        --gold-soft: #e6cf9a;
+        --blush: #eccdbd;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        font-family: "Kaiti SC", "STKaiti", "KaiTi", "楷体", "Noto Serif SC",
+          "Source Han Serif SC", "Songti SC", "SimSun", serif;
+        background: var(--night);
+        color: var(--cream);
+        overflow: hidden;
+        touch-action: manipulation;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+        animation: bodyIn 1.2s ease both;
+      }
+      @keyframes bodyIn {
+        from {
+          opacity: 0;
+        }
+      }
+      ::selection {
+        background: rgba(224, 170, 150, 0.4);
+      }
+      button {
+        font-family: inherit;
+        color: inherit;
+        background: none;
+        border: none;
+        cursor: pointer;
+      }
+      .btn {
+        border-radius: 999px;
+        letter-spacing: 0.18em;
+        transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+          box-shadow 0.35s, background 0.35s, border-color 0.35s, opacity 0.35s;
+      }
+      .btn:active {
+        transform: scale(0.95);
+      }
+
+      /* ==================== 画布 / 音乐按钮 ==================== */
+      #fx {
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+        pointer-events: none;
+      }
+      #musicBtn {
+        position: fixed;
+        top: max(16px, env(safe-area-inset-top));
+        right: 16px;
+        z-index: 60;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 240, 225, 0.28);
+        color: rgba(255, 240, 225, 0.85);
+        cursor: pointer;
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        opacity: 0;
+        transition: opacity 1.1s ease 1.3s, background 0.3s, border-color 0.3s,
+          color 0.3s, box-shadow 0.3s;
+      }
+      body.ready #musicBtn {
+        opacity: 1;
+      }
+      #musicBtn:hover {
+        background: rgba(255, 240, 225, 0.14);
+      }
+      #musicBtn .slash {
+        display: block;
+      }
+      #musicBtn.playing .slash {
+        display: none;
+      }
+      #musicBtn.playing {
+        box-shadow: 0 0 0 1px rgba(233, 190, 140, 0.35),
+          0 0 18px rgba(233, 190, 140, 0.25);
+        animation: musicPulse 2.6s ease-in-out infinite;
+      }
+      body[data-theme="light"] #musicBtn {
+        background: rgba(120, 80, 50, 0.05);
+        border-color: rgba(120, 80, 50, 0.28);
+        color: #8a6a4f;
+      }
+      @keyframes musicPulse {
+        0%,
+        100% {
+          box-shadow: 0 0 0 1px rgba(233, 190, 140, 0.3),
+            0 0 14px rgba(233, 190, 140, 0.18);
+        }
+        50% {
+          box-shadow: 0 0 0 1px rgba(233, 190, 140, 0.45),
+            0 0 26px rgba(233, 190, 140, 0.4);
+        }
+      }
+      @keyframes fadeIn {
+        to {
+          opacity: 1;
+        }
+      }
+
+      /* ==================== 场景通用 ==================== */
+      .scene {
+        position: fixed;
+        inset: 0;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.75s ease, visibility 0s linear 0.75s;
+      }
+      .scene.active {
+        opacity: 1;
+        visibility: visible;
+        transition: opacity 0.75s ease;
+      }
+
+      /* ==================== 场景一 · 开场 ==================== */
+      .scene-intro {
+        background: radial-gradient(
+          120% 90% at 50% 28%,
+          #271926 0%,
+          #191118 55%,
+          #110a10 100%
+        );
+        flex-direction: column;
+        text-align: center;
+        padding: 0 8vw;
+      }
+      .intro-eyebrow {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        justify-content: center;
+        color: var(--gold-soft);
+        font-size: clamp(12px, 3.2vw, 14px);
+        letter-spacing: 0.55em;
+        text-indent: 0.55em;
+        opacity: 0;
+      }
+      .intro-eyebrow::before,
+      .intro-eyebrow::after {
+        content: "";
+        width: clamp(28px, 8vw, 56px);
+        height: 1px;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(230, 207, 154, 0.6)
+        );
+      }
+      .intro-eyebrow::after {
+        background: linear-gradient(
+          270deg,
+          transparent,
+          rgba(230, 207, 154, 0.6)
+        );
+      }
+      .scene.active .intro-eyebrow {
+        animation: riseIn 1s ease 0.3s forwards;
+      }
+      .intro-title {
+        margin-top: 4.5vh;
+        font-weight: 400;
+        font-size: clamp(27px, 7.4vw, 46px);
+        letter-spacing: 0.16em;
+        line-height: 1.9;
+        color: #f3e6d5;
+        text-shadow: 0 0 34px rgba(233, 190, 140, 0.18);
+        opacity: 0;
+      }
+      .scene.active .intro-title {
+        animation: riseIn 1.2s ease 0.7s forwards;
+      }
+      .btn-ghost {
+        margin-top: 6.5vh;
+        padding: 14px 44px 14px calc(44px + 0.28em);
+        font-size: clamp(15px, 4vw, 17px);
+        letter-spacing: 0.28em;
+        color: #f5e5c8;
+        background: rgba(240, 220, 191, 0.06);
+        border: 1px solid rgba(240, 220, 191, 0.62);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        opacity: 0;
+      }
+      .scene.active .btn-ghost {
+        animation: riseIn 1s ease 1.5s forwards,
+          ghostBreath 2.6s ease-in-out 2.8s infinite alternate;
+      }
+      @keyframes ghostBreath {
+        from {
+          box-shadow: 0 0 10px rgba(233, 190, 140, 0.08);
+        }
+        to {
+          box-shadow: 0 0 32px rgba(233, 190, 140, 0.38);
+        }
+      }
+      .btn-ghost:hover {
+        background: rgba(240, 220, 191, 0.14);
+        border-color: rgba(240, 220, 191, 0.9);
+      }
+      .intro-foot {
+        margin-top: 5vh;
+        font-size: clamp(12px, 3.2vw, 14px);
+        letter-spacing: 0.3em;
+        color: rgba(243, 230, 213, 0.6);
+        opacity: 0;
+      }
+      .scene.active .intro-foot {
+        animation: riseIn 1.2s ease 2.1s forwards;
+      }
+      @keyframes riseIn {
+        from {
+          opacity: 0;
+          transform: translateY(18px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+
+      /* ==================== 场景二 · 信封 ==================== */
+      .scene-envelope {
+        background: radial-gradient(
+          90% 70% at 50% 42%,
+          #2c1c26 0%,
+          #1c1220 60%,
+          #130d13 100%
+        );
+      }
+      .envelope {
+        position: relative;
+        width: min(76vw, 330px);
+        aspect-ratio: 1.52;
+      }
+      .envelope::before {
+        /* 信封后的暖光 */
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 46%;
+        width: 150%;
+        aspect-ratio: 1;
+        transform: translate(-50%, -50%);
+        background: radial-gradient(
+          circle,
+          rgba(233, 180, 140, 0.16),
+          transparent 62%
+        );
+        pointer-events: none;
+      }
+      .env-wrap {
+        position: absolute;
+        inset: 0;
+        transition: opacity 0.5s ease, transform 0.5s ease;
+      }
+      .envelope.play .env-wrap {
+        animation: envIn 0.6s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+      }
+      .envelope.done .env-wrap {
+        opacity: 0;
+        transform: translateY(14px) scale(0.97);
+      }
+      @keyframes envIn {
+        from {
+          opacity: 0;
+          transform: translateY(30px) scale(0.93);
+        }
+      }
+      .env-anim {
+        position: absolute;
+        inset: 0;
+        perspective: 1000px;
+        animation: levitate 5.2s 1s ease-in-out infinite alternate;
+      }
+      .envelope.done .env-anim {
+        animation: none;
+      }
+      @keyframes levitate {
+        from {
+          transform: translateY(0);
+        }
+        to {
+          transform: translateY(-7px);
+        }
+      }
+
+      .env-body {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        border-radius: 12px;
+        background: linear-gradient(160deg, #f0d9c8, #e6c3ae);
+        box-shadow: 0 26px 60px -18px rgba(0, 0, 0, 0.6),
+          inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+      }
+      .env-letter {
+        position: absolute;
+        left: 5%;
+        width: 90%;
+        top: 7%;
+        height: 86%;
+        z-index: 2;
+        border-radius: 6px;
+        background: linear-gradient(180deg, #fdf9f0, #f7eedd);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        transition: transform 0.6s cubic-bezier(0.3, 0.7, 0.25, 1) 0.45s;
+      }
+      .env-letter span {
+        margin-top: 9%;
+        color: #cfa76a;
+        font-size: 15px;
+        opacity: 0.85;
+      }
+      .envelope.open .env-letter {
+        transform: translateY(-58%);
+      }
+      .env-pocket {
+        position: absolute;
+        inset: 0;
+        z-index: 4;
+        border-radius: 12px;
+        clip-path: polygon(0 0, 50% 56%, 100% 0, 100% 100%, 0 100%);
+        background: linear-gradient(
+            115deg,
+            rgba(255, 255, 255, 0.16),
+            transparent 44%
+          ),
+          linear-gradient(245deg, rgba(255, 255, 255, 0.16), transparent 44%),
+          linear-gradient(200deg, #eed3be 0%, #e5c0a8 55%, #ddae94 100%);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+      }
+      .env-addr {
+        position: absolute;
+        top: 63%;
+        width: 100%;
+        text-align: center;
+        color: #a4645c;
+        font-size: clamp(14px, 4.8vw, 18px);
+        letter-spacing: 0.22em;
+        text-indent: 0.22em;
+      }
+      .env-addr .gap {
+        display: inline-block;
+        width: 3.4em;
+      }
+      .env-stamp {
+        position: absolute;
+        right: 5%;
+        top: 27%;
+        width: 16%;
+        aspect-ratio: 0.9;
+        border: 1px dashed rgba(164, 100, 92, 0.6);
+        border-radius: 4px;
+        display: grid;
+        place-items: center;
+        color: rgba(164, 100, 92, 0.75);
+        font-size: 11px;
+      }
+      .env-flap {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 56%;
+        z-index: 6;
+        transform-origin: 50% 0;
+        transform-style: preserve-3d;
+        transition: transform 0.62s cubic-bezier(0.55, 0.06, 0.28, 1);
+      }
+      .envelope.open .env-flap {
+        transform: rotateX(178deg);
+      }
+      .env-flap .f-face {
+        position: absolute;
+        inset: 0;
+        border-radius: 12px 12px 0 0;
+        clip-path: polygon(0 0, 100% 0, 50% 100%);
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+      }
+      .f-front {
+        background: linear-gradient(180deg, #e9cbb4, #dfb49b);
+        box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.25);
+      }
+      .f-back {
+        background: linear-gradient(0deg, #d5a78c, #e6c6ad);
+        transform: rotateX(180deg);
+      }
+      .env-seal {
+        position: absolute;
+        left: 50%;
+        top: 56%;
+        z-index: 7;
+        width: clamp(42px, 15%, 54px);
+        aspect-ratio: 1;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        background: radial-gradient(
+          circle at 35% 30%,
+          #d98a80,
+          #b25a5c 60%,
+          #93413f
+        );
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35),
+          inset 0 2px 6px rgba(255, 255, 255, 0.25),
+          inset 0 -3px 6px rgba(0, 0, 0, 0.25);
+        display: grid;
+        place-items: center;
+        transition: transform 0.4s ease, opacity 0.4s ease;
+      }
+      .env-seal::after {
+        content: "♥";
+        color: rgba(255, 236, 226, 0.92);
+        font-size: clamp(16px, 5vw, 20px);
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+      }
+      .envelope.open .env-seal {
+        transform: translate(-50%, -50%) scale(0.25);
+        opacity: 0;
+      }
+
+      /* ==================== 场景三 · 信纸 ==================== */
+      .scene-letter {
+        background: radial-gradient(
+            70% 50% at 50% 24%,
+            rgba(236, 205, 189, 0.5),
+            transparent 70%
+          ),
+          linear-gradient(160deg, #faf3e7 0%, #f5e7d9 55%, #efdccb 100%);
+        cursor: pointer;
+      }
+      #paper {
+        position: relative;
+        width: min(88vw, 600px);
+        max-height: min(82vh, 840px);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        background: linear-gradient(175deg, #fdf9f1, #f9f0e0);
+        border-radius: 14px;
+        padding: clamp(28px, 6.5vw, 52px) clamp(22px, 6.5vw, 56px);
+        box-shadow: 0 34px 80px -22px rgba(120, 80, 50, 0.38),
+          inset 0 2px 0 rgba(255, 255, 255, 0.65);
+        color: var(--ink);
+        opacity: 0;
+        transform: translateY(30px) scale(0.98);
+        transition: opacity 0.75s ease 0.1s,
+          transform 0.75s cubic-bezier(0.2, 0.8, 0.3, 1) 0.1s;
+      }
+      .scene.active #paper {
+        opacity: 1;
+        transform: none;
+      }
+      .scene.active #paper.away {
+        opacity: 0;
+        transform: translateY(-28px) scale(0.98);
+        transition: opacity 0.6s ease, transform 0.6s ease;
+      }
+      #paper::before {
+        content: "";
+        position: absolute;
+        inset: 11px;
+        border-radius: 9px;
+        border: 1px solid rgba(199, 154, 75, 0.38);
+        pointer-events: none;
+      }
+      #paper::-webkit-scrollbar {
+        width: 4px;
+      }
+      #paper::-webkit-scrollbar-thumb {
+        background: rgba(199, 154, 75, 0.35);
+        border-radius: 4px;
+      }
+
+      .orn {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: clamp(14px, 3vh, 22px);
+      }
+      .orn span {
+        flex: 1;
+        height: 1px;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(199, 154, 75, 0.55)
+        );
+      }
+      .orn span:last-child {
+        background: linear-gradient(
+          270deg,
+          transparent,
+          rgba(199, 154, 75, 0.55)
+        );
+      }
+      .orn i {
+        width: 7px;
+        height: 7px;
+        transform: rotate(45deg);
+        border: 1px solid rgba(199, 154, 75, 0.8);
+      }
+      .lh {
+        text-align: center;
+        font-weight: 700;
+        font-size: clamp(20px, 5.6vw, 27px);
+        letter-spacing: 0.14em;
+        color: #3f2f26;
+        margin-bottom: clamp(14px, 3vh, 22px);
+      }
+      .salut {
+        text-indent: 2em;
+        line-height: 2.15;
+        font-size: clamp(15.5px, 4vw, 18.5px);
+        letter-spacing: 0.03em;
+        color: var(--ink);
+      }
+      .line {
+        max-height: 0;
+        opacity: 0;
+        overflow: hidden;
+        transition: max-height 1s ease, opacity 0.9s ease 0.12s;
+      }
+      .line.on {
+        max-height: 16em;
+        opacity: 1;
+      }
+      .line p {
+        line-height: 2.15;
+      }
+      #paper .line {
+        text-indent: 2em;
+        line-height: 2.15;
+        font-size: clamp(15.5px, 4vw, 18.5px);
+        letter-spacing: 0.03em;
+        color: var(--ink);
+        margin-bottom: 4px;
+      }
+      .sign {
+        text-align: right;
+        text-indent: 0 !important;
+      }
+      .sign p {
+        font-size: clamp(15.5px, 4vw, 18px);
+        letter-spacing: 0.06em;
+        color: #4a382d;
+      }
+      .sign .sd {
+        font-size: clamp(12.5px, 3.2vw, 14.5px);
+        color: var(--ink-soft);
+        margin-top: 6px;
+        letter-spacing: 0.14em;
+      }
+      .tap-hint {
+        margin-top: clamp(18px, 3.4vh, 26px);
+        text-align: center;
+        text-indent: 0 !important;
+        font-size: 12.5px;
+        letter-spacing: 0.3em;
+        text-indent: 0.3em;
+        color: #b28c55;
+        animation: breath 2.2s ease-in-out infinite;
+        transition: opacity 0.6s ease;
+      }
+      .tap-hint.hide {
+        opacity: 0 !important;
+        animation: none;
+      }
+      @keyframes breath {
+        0%,
+        100% {
+          opacity: 0.4;
+        }
+        50% {
+          opacity: 0.95;
+        }
+      }
+
+      /* ==================== 场景四 · 高潮 ==================== */
+      .scene-bloom {
+        background: radial-gradient(
+          110% 85% at 50% 36%,
+          #33202b 0%,
+          #1f1420 55%,
+          #120b11 100%
+        );
+        flex-direction: column;
+        text-align: center;
+        padding: 0 6vw;
+      }
+      .bloom-eyebrow {
+        color: #cfa76a;
+        font-size: clamp(12px, 3.2vw, 15px);
+        letter-spacing: 0.5em;
+        text-indent: 0.5em;
+        opacity: 0;
+      }
+      .scene.active .bloom-eyebrow {
+        animation: riseIn 1s ease 0.15s forwards;
+      }
+      .bloom-title {
+        margin-top: 3.4vh;
+        font-weight: 700;
+        font-size: clamp(33px, 9.6vw, 74px);
+        letter-spacing: 0.1em;
+        line-height: 1.35;
+        filter: drop-shadow(0 0 22px rgba(233, 190, 140, 0.3));
+      }
+      .bloom-title span {
+        display: inline-block;
+        background: linear-gradient(
+          160deg,
+          #f4e0ad 5%,
+          #ecc9a0 55%,
+          #e0ac76 95%
+        );
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        -webkit-text-fill-color: transparent;
+        opacity: 0;
+        transform: translateY(24px) scale(0.92);
+      }
+      .scene.active .bloom-title span {
+        animation: charIn 0.9s cubic-bezier(0.2, 0.8, 0.3, 1) 1.13s forwards;
+      }
+      .scene.active .bloom-title span:nth-child(1) {
+        animation-delay: 0.35s;
+      }
+      .scene.active .bloom-title span:nth-child(2) {
+        animation-delay: 0.48s;
+      }
+      .scene.active .bloom-title span:nth-child(3) {
+        animation-delay: 0.61s;
+      }
+      .scene.active .bloom-title span:nth-child(4) {
+        animation-delay: 0.74s;
+      }
+      .scene.active .bloom-title span:nth-child(5) {
+        animation-delay: 0.87s;
+      }
+      .scene.active .bloom-title span:nth-child(6) {
+        animation-delay: 1s;
+      }
+      @keyframes charIn {
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      .bloom-sub {
+        margin-top: 2.8vh;
+        color: #ecd9c8;
+        font-size: clamp(13.5px, 3.6vw, 18px);
+        letter-spacing: 0.2em;
+        opacity: 0;
+      }
+      .scene.active .bloom-sub {
+        animation: riseIn 1s ease 1.55s forwards;
+      }
+      .love-timer {
+        margin-top: 2.4vh;
+        font-size: clamp(14px, 3.8vw, 19px);
+        letter-spacing: 0.08em;
+        color: #dcc3ab;
+        font-variant-numeric: tabular-nums;
+        opacity: 0;
+        line-height: 1.9;
+      }
+      .love-timer b {
+        color: #f0c98e;
+        font-weight: 700;
+        font-size: 1.3em;
+        padding: 0 0.08em;
+      }
+      .scene.active .love-timer {
+        animation: riseIn 1s ease 1.75s forwards;
+      }
+      .bloom-btn {
+        margin-top: 5vh;
+        padding: 15px 42px 15px calc(42px + 0.15em);
+        font-size: clamp(15px, 4vw, 18px);
+        letter-spacing: 0.15em;
+        color: #5c3a33;
+        background: linear-gradient(120deg, #f7e1cb, #eec3b0);
+        box-shadow: 0 14px 34px -10px rgba(226, 160, 130, 0.55),
+          inset 0 1px 0 rgba(255, 255, 255, 0.7);
+        opacity: 0;
+      }
+      .scene.active .bloom-btn {
+        animation: riseIn 1s ease 2s forwards;
+      }
+      .bloom-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 20px 44px -10px rgba(226, 160, 130, 0.72),
+          inset 0 1px 0 rgba(255, 255, 255, 0.7);
+      }
+      .saved-chip {
+        margin-top: 2.6vh;
+        display: none;
+        padding: 9px 22px;
+        border-radius: 999px;
+        border: 1px solid rgba(236, 205, 189, 0.4);
+        color: #e9cfc0;
+        font-size: clamp(12px, 3.2vw, 14px);
+        letter-spacing: 0.12em;
+      }
+      .saved-chip.show {
+        display: inline-block;
+        opacity: 0;
+      }
+      .scene.active .saved-chip.show {
+        animation: riseIn 1s ease 2.5s forwards;
+      }
+      .replay {
+        position: absolute;
+        bottom: max(4vh, env(safe-area-inset-bottom));
+        left: 0;
+        right: 0;
+        margin: 0 auto;
+        width: max-content;
+        font-size: 12px;
+        letter-spacing: 0.28em;
+        text-indent: 0.28em;
+        color: rgba(243, 230, 213, 0.58);
+        padding: 8px 12px;
+        opacity: 0;
+        transition: color 0.3s;
+      }
+      .replay:hover {
+        color: rgba(243, 230, 213, 0.8);
+      }
+      .scene.active .replay {
+        animation: riseIn 1.2s ease 2.9s forwards;
+      }
+
+      /* ==================== 回信弹层 ==================== */
+      .overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 22px;
+        background: rgba(18, 10, 14, 0.52);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.35s ease, visibility 0s linear 0.35s;
+      }
+      .overlay.open {
+        opacity: 1;
+        visibility: visible;
+        transition: opacity 0.35s ease;
+      }
+      .rcard {
+        position: relative;
+        width: min(100%, 420px);
+        max-height: 84vh;
+        overflow-y: auto;
+        background: linear-gradient(170deg, #fdf9f1, #f6ecdc);
+        border-radius: 22px;
+        padding: 32px 26px 24px;
+        color: var(--ink);
+        box-shadow: 0 40px 90px -20px rgba(0, 0, 0, 0.55);
+        transform: translateY(18px) scale(0.96);
+        transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.3, 1);
+      }
+      .overlay.open .rcard {
+        transform: none;
+      }
+      .rcard.shake {
+        animation: shake 0.4s ease;
+      }
+      @keyframes shake {
+        0%,
+        100% {
+          transform: translateX(0);
+        }
+        25% {
+          transform: translateX(-7px);
+        }
+        55% {
+          transform: translateX(6px);
+        }
+        80% {
+          transform: translateX(-3px);
+        }
+      }
+      .rx {
+        position: absolute;
+        top: 10px;
+        right: 12px;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        font-size: 20px;
+        color: #a98d78;
+        line-height: 1;
+        transition: background 0.25s, color 0.25s;
+      }
+      .rx:hover {
+        background: rgba(169, 141, 120, 0.12);
+        color: #7d6350;
+      }
+      .rcard h3 {
+        font-size: 19px;
+        letter-spacing: 0.14em;
+        color: #3f2f26;
+        text-align: center;
+        margin-bottom: 8px;
+      }
+      .rsub {
+        text-align: center;
+        font-size: 13px;
+        letter-spacing: 0.08em;
+        color: var(--ink-soft);
+        margin-bottom: 18px;
+      }
+      #replyText {
+        width: 100%;
+        min-height: 118px;
+        resize: none;
+        padding: 13px 15px;
+        border-radius: 14px;
+        border: 1px solid #e3c8b4;
+        background: #fbf3ea;
+        font-family: inherit;
+        font-size: 16px;
+        line-height: 1.9;
+        letter-spacing: 0.03em;
+        color: var(--ink);
+        user-select: text;
+        -webkit-user-select: text;
+        transition: border-color 0.3s, box-shadow 0.3s;
+      }
+      #replyText:focus {
+        outline: none;
+        border-color: var(--gold);
+        box-shadow: 0 0 0 3px rgba(199, 154, 75, 0.14);
+      }
+      #replyText::placeholder {
+        color: #c4ab97;
+      }
+      .rmeta {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 8px;
+        font-size: 12px;
+        color: #b39a85;
+        letter-spacing: 0.06em;
+      }
+      .rtip.warn {
+        color: #c2706b;
+      }
+      .rbtns {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        margin-top: 20px;
+      }
+      .btn-solid {
+        padding: 12px 30px 12px calc(30px + 0.18em);
+        font-size: 15px;
+        letter-spacing: 0.18em;
+        color: #5c3a33;
+        background: linear-gradient(120deg, #f3d9c0, #e8bba6);
+        box-shadow: 0 10px 24px -8px rgba(200, 140, 110, 0.5),
+          inset 0 1px 0 rgba(255, 255, 255, 0.7);
+      }
+      .btn-solid:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 14px 30px -8px rgba(200, 140, 110, 0.65),
+          inset 0 1px 0 rgba(255, 255, 255, 0.7);
+      }
+      .btn-line {
+        padding: 12px 26px 12px calc(26px + 0.18em);
+        font-size: 15px;
+        letter-spacing: 0.18em;
+        color: #8a6f5a;
+        border: 1px solid rgba(138, 111, 90, 0.4);
+      }
+      .btn-line:hover {
+        border-color: rgba(138, 111, 90, 0.8);
+        background: rgba(138, 111, 90, 0.06);
+      }
+      .rsaved {
+        display: none;
+      }
+      .rcard.saved .rform {
+        display: none;
+      }
+      .rcard.saved .rsaved {
+        display: block;
+        animation: riseIn 0.5s ease;
+      }
+      .sheart {
+        text-align: center;
+        font-size: 34px;
+        color: var(--rose);
+        animation: heartBeat 1.6s ease-in-out infinite;
+      }
+      @keyframes heartBeat {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        12% {
+          transform: scale(1.14);
+        }
+        24% {
+          transform: scale(1);
+        }
+        36% {
+          transform: scale(1.1);
+        }
+        48% {
+          transform: scale(1);
+        }
+      }
+      .st {
+        text-align: center;
+        font-size: 15px;
+        letter-spacing: 0.4em;
+        text-indent: 0.4em;
+        color: var(--rose);
+        margin: 10px 0 14px;
+      }
+      .sq {
+        font-size: 16.5px;
+        line-height: 2;
+        letter-spacing: 0.03em;
+        color: #4a382d;
+        text-align: center;
+        padding: 14px 6px;
+        border-top: 1px solid rgba(199, 154, 75, 0.3);
+        border-bottom: 1px solid rgba(199, 154, 75, 0.3);
+      }
+      .sq::before {
+        content: "「";
+        color: #c9a06a;
+      }
+      .sq::after {
+        content: "」";
+        color: #c9a06a;
+      }
+      .sd2 {
+        text-align: center;
+        font-size: 12.5px;
+        letter-spacing: 0.16em;
+        color: var(--ink-soft);
+        margin-top: 12px;
+      }
+
+      /* ==================== 响应式微调 ==================== */
+      @media (max-width: 640px) {
+        .bloom-btn {
+          padding: 14px 34px 14px calc(34px + 0.15em);
+        }
+        .rcard {
+          padding: 28px 20px 20px;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body data-theme="dark">
+    <canvas id="fx"></canvas>
+
+    <button
+      id="musicBtn"
+      aria-label="开启背景音乐"
+      title="背景音乐（默认关闭）"
+    >
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.6"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M9 18V6l11-2v11.5" />
+        <circle cx="6.5" cy="18" r="2.6" />
+        <circle cx="17.5" cy="15.5" r="2.6" />
+        <line class="slash" x1="3.5" y1="3.5" x2="20.5" y2="20.5" />
+      </svg>
+    </button>
+
+    <!-- ============ 场景一 · 开场 ============ -->
+    <section class="scene scene-intro active" data-scene="intro">
+      <div class="intro-eyebrow">写 给 你</div>
+      <h1 class="intro-title">有一封信<br />等你很久了</h1>
+      <button class="btn btn-ghost" id="openBtn">轻轻开启</button>
+      <div class="intro-foot">愿接下来的几分钟，只属于你</div>
+    </section>
+
+    <!-- ============ 场景二 · 拆信封 ============ -->
+    <section class="scene scene-envelope" data-scene="envelope">
+      <div class="envelope" id="envelope">
+        <div class="env-wrap">
+          <div class="env-anim">
+            <div class="env-body"></div>
+            <div class="env-letter"><span>♥</span></div>
+            <div class="env-pocket">
+              <div class="env-addr">包子<span class="gap"></span>亲启</div>
+              <div class="env-stamp">♥</div>
+            </div>
+            <div class="env-flap">
+              <div class="f-face f-front"></div>
+              <div class="f-face f-back"></div>
+            </div>
+            <div class="env-seal"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 场景三 · 信纸 ============ -->
+    <section class="scene scene-letter" data-scene="letter">
+      <article id="paper">
+        <div class="orn"><span></span><i></i><span></span></div>
+        <h2 class="lh">致包子</h2>
+        <p class="salut">见字如面。</p>
+        <p class="line">
+          有些话，说出口总觉得太轻；落在纸上，才敢慢慢讲给你听。
+        </p>
+        <p class="line">
+          还记得 2025 年 11 月 22
+          日吗？那天风很轻，你笑着朝我走来。我平凡的日子，就从那一刻起有了光。
+        </p>
+        <p class="line">
+          后来，我们一起吃过深夜的面，一起逛过超市，也把许多个普通的黄昏，慢慢走成了值得纪念的日子。我才明白，喜欢一个人，就是每次想到你，心里都会安静地亮一下。
+        </p>
+        <p class="line">
+          往后的路还很长。我想陪你看春天的花、秋天的月，把每一句「下次一起去」，都变成「我们回来啦」。
+        </p>
+        <p class="line">
+          这封信写到这里，想说的话其实还有很多——剩下的，我想用往后的每一天，慢慢讲给你听。
+        </p>
+        <div class="sign line">
+          <p>写于 2026 年 9 月 25 日</p>
+        </div>
+        <div class="tap-hint" id="tapHint">轻触信纸 · 继续读</div>
+      </article>
+    </section>
+    <!--
+  ══════════════════════ 个 性 化 指 南 ══════════════════════
+  个性化信息已填写完毕，无需再改：
+    - 收件人：包子（信封 + 信纸称呼，共 2 处）
+    - 纪念日：2025 年 11 月 22 日（正文第二段）
+    - 落款：已按需求去掉署名，仅保留「写于 2026 年 9 月 25 日」
+  可选：结尾高潮那句话在 id="bloomTitle" 里改（每个字一个 <span>，建议不超过 8 个字）。
+  背景音乐在点「轻轻开启」时自动响起，右上角 ♪ 随时开关；她写下的话存在浏览器本地，刷新不会丢。
+  ═════════════════════════════════════════════════════════════
+-->
+
+    <!-- ============ 场景四 · 高潮 ============ -->
+    <section class="scene scene-bloom" data-scene="bloom">
+      <div class="bloom-wrap">
+        <div class="bloom-eyebrow">—— 星光为证 ——</div>
+        <h1 class="bloom-title" id="bloomTitle">
+          <span>余</span><span>生</span><span>请</span><span>多</span
+          ><span>指</span><span>教</span>
+        </h1>
+        <p class="bloom-sub">晴雨晨昏 · 山海四季 · 都想与你有关</p>
+        <div class="love-timer" id="loveTimer" aria-live="off"></div>
+        <button class="btn bloom-btn" id="replyBtn">我也想对你说……</button
+        ><br />
+        <div class="saved-chip" id="savedChip">
+          ♥ 你写下的那句话，我一直留着
+        </div>
+      </div>
+      <button class="replay" id="replayBtn">把 信 再 看 一 遍</button>
+    </section>
+
+    <!-- ============ 回信弹层 ============ -->
+    <div class="overlay" id="overlay">
+      <div class="rcard" id="rcard" role="dialog" aria-label="回信">
+        <button class="rx" id="rxBtn" aria-label="关闭">×</button>
+        <div class="rform" id="rform">
+          <h3>我也想听你说</h3>
+          <p class="rsub">写下此刻想说的话，它会一直留在这封信里。</p>
+          <textarea
+            id="replyText"
+            maxlength="300"
+            placeholder="想说的，都写在这里吧……"
+          ></textarea>
+          <div class="rmeta">
+            <span class="rtip" id="rTip">悄悄话只保存在这台设备上</span
+            ><span id="replyCount">0 / 300</span>
+          </div>
+          <div class="rbtns">
+            <button class="btn btn-line" id="rClose">先不写了</button>
+            <button class="btn btn-solid" id="rSave">收好这句话</button>
+          </div>
+        </div>
+        <div class="rsaved">
+          <div class="sheart">♥</div>
+          <p class="st">已 收 好</p>
+          <p class="sq" id="savedText"></p>
+          <p class="sd2" id="savedDate"></p>
+          <div class="rbtns">
+            <button class="btn btn-line" id="rEdit">再改一改</button>
+            <button class="btn btn-solid" id="rDone">好啦</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        "use strict";
+        const $ = (s) => document.querySelector(s);
+        const $$ = (s) => Array.from(document.querySelectorAll(s));
+        const RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+        /* ════════════════ 粒子引擎（光斑 / 爱心 / 花瓣 / 星光） ════════════════ */
+        const FX = (function () {
+          const cv = $("#fx"),
+            c = cv.getContext("2d");
+          const mobile = innerWidth < 640;
+          const N_AMB = RM ? (mobile ? 8 : 16) : mobile ? 20 : 42;
+          const CAP = mobile ? 60 : 110;
+          const HEART = ["#e99696", "#e27d87", "#f0aaa0"];
+          const PETAL = ["#f2c3ae", "#eeb19d", "#f6d0bd"];
+          let W = 0,
+            H = 0,
+            amb = [],
+            fly = [],
+            envMul = 1,
+            bloomOn = false,
+            lastSpawn = 0;
+
+          function sprite(c0, c1) {
+            const s = document.createElement("canvas");
+            s.width = s.height = 64;
+            const g = s.getContext("2d");
+            const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+            gr.addColorStop(0, c0);
+            gr.addColorStop(0.38, c1);
+            gr.addColorStop(1, "rgba(255,255,255,0)");
+            g.fillStyle = gr;
+            g.fillRect(0, 0, 64, 64);
+            return s;
+          }
+          const sprites = [
+            sprite("rgba(255,236,200,1)", "rgba(233,190,120,.5)"),
+            sprite("rgba(255,220,225,1)", "rgba(233,150,160,.45)"),
+          ];
+          function resize() {
+            const dpr = Math.min(devicePixelRatio || 1, 2);
+            W = innerWidth;
+            H = innerHeight;
+            cv.width = W * dpr;
+            cv.height = H * dpr;
+            cv.style.width = W + "px";
+            cv.style.height = H + "px";
+            c.setTransform(dpr, 0, 0, dpr, 0, 0);
+          }
+          function seed() {
+            amb = [];
+            for (let i = 0; i < N_AMB; i++)
+              amb.push({
+                x: Math.random() * W,
+                y: Math.random() * H,
+                s: 5 + Math.random() * 10,
+                v: 6 + Math.random() * 11,
+                ph: Math.random() * 6.28,
+                dr: 0.2 + Math.random() * 0.5,
+                sp: (Math.random() * 2) | 0,
+                a: 0.22 + Math.random() * 0.38,
+              });
+          }
+          resize();
+          seed();
+          addEventListener("resize", () => {
+            resize();
+            seed();
+          });
+
+          const rnd = (a, b) => a + Math.random() * (b - a);
+          const pick = (a) => a[(Math.random() * a.length) | 0];
+          function makeRise() {
+            const r = Math.random(),
+              type = r < 0.45 ? 0 : r < 0.78 ? 1 : 2;
+            return {
+              type,
+              x: rnd(0.04, 0.96) * W,
+              y: H + 24,
+              vx: rnd(-9, 9),
+              vy: -rnd(42, 100),
+              rot: rnd(0, 6.28),
+              vr: rnd(-1.6, 1.6),
+              s: type === 0 ? rnd(7, 14) : type === 1 ? rnd(5, 9) : rnd(4, 8),
+              sway: rnd(0.5, 1.4),
+              ph: rnd(0, 6.28),
+              life: 0,
+              max: rnd(8, 13),
+              a: rnd(0.55, 0.9),
+              col:
+                type === 0 ? pick(HEART) : type === 1 ? pick(PETAL) : "#efd28e",
+            };
+          }
+          function burst(x, y, n) {
+            for (let i = 0; i < n; i++) {
+              const a = Math.random() * 6.28,
+                v = rnd(80, 250),
+                heart = Math.random() < 0.3;
+              fly.push({
+                type: heart ? 0 : 3,
+                x,
+                y,
+                vx: Math.cos(a) * v * (heart ? 0.55 : 1),
+                vy: Math.sin(a) * v * (heart ? 0.55 : 1) - (heart ? 50 : 0),
+                rot: rnd(0, 6.28),
+                vr: rnd(-2, 2),
+                s: heart ? rnd(6, 11) : rnd(3, 7),
+                sway: 0,
+                ph: 0,
+                life: 0,
+                max: heart ? rnd(2.4, 3.4) : rnd(1.1, 2.1),
+                a: rnd(0.6, 0.95),
+                col: heart ? pick(HEART) : null,
+              });
+            }
+          }
+          function drawFly(p, t) {
+            const k = p.life / p.max;
+            const al = p.a * Math.min(1, p.life / 0.5) * (1 - k * k);
+            c.globalAlpha = al;
+            if (p.type === 3) {
+              const s = p.s * (2.6 + Math.sin(t * 6 + p.ph) * 0.7);
+              c.drawImage(sprites[0], p.x - s / 2, p.y - s / 2, s, s);
+              return;
+            }
+            c.save();
+            c.translate(p.x, p.y);
+            c.rotate(p.rot);
+            if (p.type === 0) {
+              const s = p.s;
+              c.fillStyle = p.col;
+              c.beginPath();
+              c.moveTo(0, s * 0.34);
+              c.bezierCurveTo(
+                -s * 0.64,
+                -s * 0.24,
+                -s * 0.3,
+                -s * 0.66,
+                0,
+                -s * 0.28
+              );
+              c.bezierCurveTo(
+                s * 0.3,
+                -s * 0.66,
+                s * 0.64,
+                -s * 0.24,
+                0,
+                s * 0.34
+              );
+              c.closePath();
+              c.fill();
+            } else if (p.type === 1) {
+              c.fillStyle = p.col;
+              c.scale(1, 0.5);
+              c.beginPath();
+              c.arc(0, 0, p.s, 0, 6.283);
+              c.fill();
+            } else {
+              c.fillStyle = p.col;
+              c.beginPath();
+              for (let i = 0; i < 4; i++) {
+                const a = (i * Math.PI) / 2,
+                  b = a + Math.PI / 4;
+                c.lineTo(Math.cos(a) * p.s * 1.7, Math.sin(a) * p.s * 1.7);
+                c.lineTo(Math.cos(b) * p.s * 0.4, Math.sin(b) * p.s * 0.4);
+              }
+              c.closePath();
+              c.fill();
+            }
+            c.restore();
+          }
+          let last = performance.now();
+          function frame(now) {
+            const dt = Math.min(0.05, (now - last) / 1000);
+            last = now;
+            const t = now / 1000;
+            c.clearRect(0, 0, W, H);
+            for (const p of amb) {
+              p.y -= p.v * dt;
+              if (!RM) p.x += Math.sin(t * p.dr + p.ph) * 8 * dt;
+              if (p.y < -24) {
+                p.y = H + 24;
+                p.x = Math.random() * W;
+              }
+              c.globalAlpha =
+                p.a * (0.55 + 0.45 * Math.sin(t * 1.3 + p.ph)) * envMul;
+              c.drawImage(
+                sprites[p.sp],
+                p.x - p.s / 2,
+                p.y - p.s / 2,
+                p.s,
+                p.s
+              );
+            }
+            if (
+              bloomOn &&
+              fly.length < CAP &&
+              now - lastSpawn > (mobile ? 300 : 220)
+            ) {
+              lastSpawn = now;
+              for (let i = 0, n = mobile ? 1 : 2; i < n; i++)
+                if (fly.length < CAP) fly.push(makeRise());
+            }
+            for (let i = fly.length - 1; i >= 0; i--) {
+              const p = fly[i];
+              p.life += dt;
+              p.x +=
+                p.vx * dt +
+                (p.sway ? Math.sin(p.life * p.sway + p.ph) * 22 * dt : 0);
+              p.y += p.vy * dt;
+              p.rot += p.vr * dt;
+              if (p.type === 3) {
+                p.vy += 110 * dt;
+                p.vx *= Math.max(0, 1 - 1.5 * dt);
+                p.vy *= Math.max(0, 1 - 0.6 * dt);
+              }
+              if (p.life > p.max || p.y < -40 || p.x < -50 || p.x > W + 50) {
+                fly.splice(i, 1);
+                continue;
+              }
+              drawFly(p, t);
+            }
+            c.globalAlpha = 1;
+            requestAnimationFrame(frame);
+          }
+          requestAnimationFrame(frame);
+          return {
+            env(name) {
+              bloomOn = name === "bloom";
+              envMul = name === "light" ? 0.55 : 1;
+            },
+            bloom() {
+              burst(W / 2, H * 0.4, mobile ? 18 : 32);
+              for (let i = 0; i < (mobile ? 4 : 7); i++) fly.push(makeRise());
+            },
+            burst,
+          };
+        })();
+
+        /* ════════════════ 生成式背景音乐（Web Audio，默认关闭） ════════════════ */
+        const Music = (function () {
+          let ctx = null,
+            master,
+            padBus,
+            delayBus,
+            fb,
+            wet,
+            on = false,
+            chordIdx = 0,
+            nextChord = 0,
+            nextNote = 0,
+            timer = null;
+          const CHORDS = [
+            [261.63, 329.63, 392.0, 587.33],
+            [220.0, 261.63, 329.63, 392.0],
+            [174.61, 220.0, 261.63, 329.63],
+            [196.0, 246.94, 293.66, 392.0],
+          ];
+          const PENTA = [523.25, 587.33, 659.25, 783.99, 880.0, 1046.5];
+          function ensure() {
+            if (ctx) return;
+            const AC = window.AudioContext || window.webkitAudioContext;
+            ctx = new AC();
+            master = ctx.createGain();
+            master.gain.value = 0;
+            master.connect(ctx.destination);
+            const lp = ctx.createBiquadFilter();
+            lp.type = "lowpass";
+            lp.frequency.value = 1400;
+            padBus = ctx.createGain();
+            padBus.gain.value = 0.9;
+            padBus.connect(lp);
+            lp.connect(master);
+            delayBus = ctx.createDelay(1);
+            delayBus.delayTime.value = 0.42;
+            fb = ctx.createGain();
+            fb.gain.value = 0.34;
+            wet = ctx.createGain();
+            wet.gain.value = 0.22;
+            delayBus.connect(fb);
+            fb.connect(delayBus);
+            delayBus.connect(wet);
+            wet.connect(master);
+          }
+          function pad(f, t, dur) {
+            const o = ctx.createOscillator();
+            o.type = "triangle";
+            o.frequency.value = f;
+            const g = ctx.createGain();
+            g.gain.setValueAtTime(0, t);
+            g.gain.linearRampToValueAtTime(0.045, t + 1.3);
+            g.gain.setValueAtTime(0.045, t + dur - 1.4);
+            g.gain.linearRampToValueAtTime(0, t + dur);
+            o.connect(g);
+            g.connect(padBus);
+            o.start(t);
+            o.stop(t + dur + 0.1);
+          }
+          function bell(f, t) {
+            const o = ctx.createOscillator();
+            o.type = "sine";
+            o.frequency.value = f;
+            const g = ctx.createGain();
+            g.gain.setValueAtTime(0, t);
+            g.gain.linearRampToValueAtTime(0.055, t + 0.012);
+            g.gain.exponentialRampToValueAtTime(0.0001, t + 1.9);
+            o.connect(g);
+            g.connect(master);
+            g.connect(delayBus);
+            o.start(t);
+            o.stop(t + 2);
+            const o2 = ctx.createOscillator();
+            o2.type = "sine";
+            o2.frequency.value = f * 2.001;
+            const g2 = ctx.createGain();
+            g2.gain.setValueAtTime(0, t);
+            g2.gain.linearRampToValueAtTime(0.016, t + 0.012);
+            g2.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
+            o2.connect(g2);
+            g2.connect(delayBus);
+            o2.start(t);
+            o2.stop(t + 1.4);
+          }
+          function schedule() {
+            const ahead = ctx.currentTime + 1.3;
+            if (nextChord < ahead) {
+              CHORDS[chordIdx % CHORDS.length].forEach((f) =>
+                pad(f, nextChord, 5.2)
+              );
+              chordIdx++;
+              nextChord += 4.6;
+            }
+            if (nextNote < ahead) {
+              if (Math.random() < 0.85)
+                bell(PENTA[(Math.random() * PENTA.length) | 0], nextNote);
+              nextNote += 1.2 + Math.random() * 1.4;
+            }
+          }
+          function start() {
+            try {
+              ensure();
+              ctx.resume();
+              nextChord = ctx.currentTime + 0.1;
+              nextNote = ctx.currentTime + 0.8;
+              master.gain.cancelScheduledValues(0);
+              master.gain.setTargetAtTime(0.9, ctx.currentTime, 0.8);
+              schedule();
+              timer = setInterval(schedule, 400);
+              on = true;
+            } catch (e) {
+              on = false;
+            }
+          }
+          function stop() {
+            if (!ctx) return;
+            master.gain.setTargetAtTime(0, ctx.currentTime, 0.4);
+            clearInterval(timer);
+            timer = null;
+            on = false;
+            setTimeout(() => {
+              if (!on && ctx) ctx.suspend();
+            }, 1600);
+          }
+          return {
+            toggle() {
+              on ? stop() : start();
+              return on;
+            },
+          };
+        })();
+        const musicBtn = $("#musicBtn");
+        function setMusicUI(playing) {
+          musicBtn.classList.toggle("playing", playing);
+          musicBtn.setAttribute(
+            "aria-label",
+            playing ? "关闭背景音乐" : "开启背景音乐"
+          );
+        }
+        musicBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          let playing = false;
+          try {
+            playing = Music.toggle();
+          } catch (e) {
+            playing = false;
+          }
+          setMusicUI(playing);
+        });
+
+        /* ════════════════ 场景流转 ════════════════ */
+        const body = document.body;
+        function go(name) {
+          $$(".scene").forEach((s) =>
+            s.classList.toggle("active", s.dataset.scene === name)
+          );
+          body.dataset.theme = name === "letter" ? "light" : "dark";
+          FX.env(name === "letter" ? "light" : name);
+        }
+
+        /* —— 开场 → 拆信 —— */
+        $("#openBtn").addEventListener("click", function () {
+          this.disabled = true;
+          try {
+            setMusicUI(Music.toggle());
+          } catch (e) {}
+          go("envelope");
+          const env = $("#envelope");
+          setTimeout(() => env.classList.add("play"), 60);
+          setTimeout(() => env.classList.add("open"), 620);
+          setTimeout(() => env.classList.add("done"), 1780);
+          setTimeout(() => go("letter"), 2150);
+        });
+
+        /* —— 信纸逐行点亮 —— */
+        const paper = $("#paper");
+        const lines = $$("#paper .line");
+        const tapHint = $("#tapHint");
+        let li = 0,
+          letterDone = false;
+        function revealNext() {
+          if (letterDone || li >= lines.length) return;
+          lines[li].classList.add("on");
+          li++;
+          requestAnimationFrame(() => {
+            paper.scrollTo({ top: paper.scrollHeight, behavior: "smooth" });
+            setTimeout(
+              () =>
+                paper.scrollTo({ top: paper.scrollHeight, behavior: "smooth" }),
+              520
+            );
+            setTimeout(
+              () =>
+                paper.scrollTo({
+                  top: paper.scrollHeight,
+                  behavior: "instant",
+                }),
+              1150
+            );
+          });
+          if (li === lines.length) {
+            letterDone = true;
+            tapHint.classList.add("hide");
+            setTimeout(() => {
+              paper.classList.add("away");
+              setTimeout(() => {
+                go("bloom");
+                FX.bloom();
+              }, 650);
+            }, 1600);
+          }
+        }
+        $(".scene-letter").addEventListener("click", revealNext);
+
+        /* —— 高潮：点空白处撒小心心 —— */
+        $(".scene-bloom").addEventListener("click", (e) => {
+          if (e.target.closest("button")) return;
+          FX.burst(e.clientX, e.clientY, 9);
+        });
+        $("#replayBtn").addEventListener("click", () => location.reload());
+
+        /* ════════════════ 回信（localStorage 持久化） ════════════════ */
+        const REPLY_KEY = "love_letter_reply_v1";
+        const overlay = $("#overlay"),
+          rcard = $("#rcard");
+        const ta = $("#replyText"),
+          cnt = $("#replyCount"),
+          rTip = $("#rTip"),
+          chip = $("#savedChip");
+        function loadReply() {
+          try {
+            const s = localStorage.getItem(REPLY_KEY);
+            return s ? JSON.parse(s) : null;
+          } catch (e) {
+            return null;
+          }
+        }
+        function saveReply(rec) {
+          try {
+            localStorage.setItem(REPLY_KEY, JSON.stringify(rec));
+          } catch (e) {}
+        }
+        function fmtDate(iso) {
+          try {
+            return new Date(iso).toLocaleDateString("zh-CN", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            });
+          } catch (e) {
+            return "";
+          }
+        }
+        function updateCount() {
+          cnt.textContent = ta.value.length + " / 300";
+        }
+        function showForm(text) {
+          rcard.classList.remove("saved");
+          if (text != null) ta.value = text;
+          updateCount();
+          setTimeout(() => ta.focus(), 380);
+        }
+        function showSaved(rec) {
+          $("#savedText").textContent = rec.text;
+          $("#savedDate").textContent = "写于 " + fmtDate(rec.at);
+          rcard.classList.add("saved");
+        }
+        function refreshChip() {
+          if (loadReply()) chip.classList.add("show");
+        }
+        ta.addEventListener("input", () => {
+          updateCount();
+          rTip.textContent = "悄悄话只保存在这台设备上";
+          rTip.classList.remove("warn");
+        });
+        $("#replyBtn").addEventListener("click", () => {
+          const saved = loadReply();
+          if (saved) showSaved(saved);
+          else showForm("");
+          overlay.classList.add("open");
+        });
+        function closeOverlay() {
+          overlay.classList.remove("open");
+        }
+        $("#rxBtn").addEventListener("click", closeOverlay);
+        $("#rClose").addEventListener("click", closeOverlay);
+        $("#rDone").addEventListener("click", closeOverlay);
+        overlay.addEventListener("click", (e) => {
+          if (e.target === overlay) closeOverlay();
+        });
+        $("#rSave").addEventListener("click", () => {
+          const t = ta.value.trim();
+          if (!t) {
+            rcard.classList.add("shake");
+            rTip.textContent = "写点什么再收好吧 ♥";
+            rTip.classList.add("warn");
+            setTimeout(() => rcard.classList.remove("shake"), 450);
+            return;
+          }
+          const rec = { text: t, at: new Date().toISOString() };
+          saveReply(rec);
+          showSaved(rec);
+          refreshChip();
+        });
+        $("#rEdit").addEventListener("click", () => {
+          const saved = loadReply();
+          showForm(saved ? saved.text : "");
+        });
+
+        /* ════════════════ 键盘支持 ════════════════ */
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape" && overlay.classList.contains("open")) {
+            closeOverlay();
+            return;
+          }
+          const active = document.querySelector(".scene.active");
+          if (!active) return;
+          const name = active.dataset.scene;
+          if (name === "intro" && (e.key === "Enter" || e.key === " ")) {
+            $("#openBtn").click();
+          } else if (
+            name === "letter" &&
+            (e.key === " " || e.key === "Enter" || e.key === "ArrowRight")
+          ) {
+            e.preventDefault();
+            revealNext();
+          }
+        });
+
+        /* ════════════════ 在一起计时 ════════════════ */
+        const LOVE_START = new Date(
+          2025,
+          10,
+          22,
+          0,
+          0,
+          0
+        ); /* 2025 年 11 月 22 日 00:00（本地时间） */
+        const timerEl = $("#loveTimer");
+        function tickTimer() {
+          let s = Math.floor((Date.now() - LOVE_START.getTime()) / 1000);
+          if (!(s > 0)) s = 0;
+          const d = Math.floor(s / 86400);
+          s -= d * 86400;
+          const h = Math.floor(s / 3600);
+          s -= h * 3600;
+          const m = Math.floor(s / 60);
+          const sec = s - m * 60;
+          timerEl.textContent =
+            "在一起已经 " +
+            d +
+            " 天 " +
+            h +
+            " 小时 " +
+            m +
+            " 分 " +
+            sec +
+            " 秒";
+        }
+        tickTimer();
+        setInterval(tickTimer, 1000);
+
+        /* ════════════════ 初始化 ════════════════ */
+        requestAnimationFrame(() => document.body.classList.add("ready"));
+        refreshChip();
+      })();
+    </script>
+  </body>
+</html>
