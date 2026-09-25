@@ -1142,7 +1142,7 @@
             placeholder="想说的，都写在这里吧……"
           ></textarea>
           <div class="rmeta">
-            <span class="rtip" id="rTip">悄悄话只保存在这台设备上</span
+            <span class="rtip" id="rTip">这句话会悄悄寄给他 ♥</span
             ><span id="replyCount">0 / 300</span>
           </div>
           <div class="rbtns">
@@ -1626,6 +1626,26 @@
 
         /* ════════════════ 回信（localStorage 持久化） ════════════════ */
         const REPLY_KEY = "love_letter_reply_v1";
+        /* ══ 回信推送到微信（可选）══
+           打开 https://sct.ftqq.com 用「你的」微信扫码登录，复制 SendKey（SCT 开头），
+           粘贴到下面两个双引号之间并保存。之后她每次提交回信，你的微信都会收到推送。
+           留空则只保存在她的设备本地。免费版每天最多推送 5 条。 */
+        const SEND_KEY = "SCT427945Tw1ewmKan2XxLDUJrfkf2K938";
+        function pushReplyToWeChat(rec) {
+          if (!SEND_KEY) return;
+          try {
+            const q =
+              "title=" +
+              encodeURIComponent("💌 她写下了一段悄悄话") +
+              "&desp=" +
+              encodeURIComponent(
+                "她说：\n\n" + rec.text + "\n\n—— " + fmtDate(rec.at)
+              );
+            fetch("https://sctapi.ftqq.com/" + SEND_KEY + ".send?" + q, {
+              mode: "no-cors",
+            }).catch(() => {});
+          } catch (e) {}
+        }
         const overlay = $("#overlay"),
           rcard = $("#rcard");
         const ta = $("#replyText"),
@@ -1675,7 +1695,7 @@
         }
         ta.addEventListener("input", () => {
           updateCount();
-          rTip.textContent = "悄悄话只保存在这台设备上";
+          rTip.textContent = "这句话会悄悄寄给他 ♥";
           rTip.classList.remove("warn");
         });
         $("#replyBtn").addEventListener("click", () => {
@@ -1704,6 +1724,7 @@
           }
           const rec = { text: t, at: new Date().toISOString() };
           saveReply(rec);
+          pushReplyToWeChat(rec);
           showSaved(rec);
           refreshChip();
         });
